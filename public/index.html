@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedSafe</title>
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; max-width: 800px; margin 2rem auto; padding: 0 1rem; }
+        input, select, button { font: inherit; padding: .4rem; }
+        .card { border: 1px solid #ccc; padding: .8rem; margin: .6rem 0; border-radius: 6px; }
+        .error { color: #a6261d; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>MedSafe</h1>
+    <p>Look up FDA warnings and drug interactions. Data from <a href="https://open.fda.gov/">openFDA</a>. Not medical advice</p>
+    <form id="form">
+        <input id="q" placeholder="Drug name, e.g ibupfrofen" required>
+        <button>Search</button>
+    </form>
+    <div id="controls" hidden>
+        <input id="filter" placeholder="Filter results">
+        <select id="sort">
+            <option value="brand">Sort by name</option>
+            <option value="manufacturer">Sort by manufacturer</option>
+        </select>
+    </div>
+    <p id="status"></p>
+    <div id="results"></div>
+<script>
+    const $ = (id) => document.getElementById(id);
+    let data =[];
+    $('form').addEventListener('submit',async (e) => {
+        e.preventDefault();
+        $('status').className = '';
+        $('status').textContent = 'Searcching...';
+        $('results').innerHTML = '';
+        $('controls').hidden = true;
+        try {
+            const res = await fetch('/api/search?q=' + encodeURIComponent($('q').value.trim()));
+            const body = await res.json();
+            if (!res.ok) throw new Error(body.error);
+            data = body;
+            if (!data.length) { $('status').textContent = 'No results found.'; return;}
+            $('controls').hidden = false;
+            render();
+        } catch (err) {
+            $('status').className = 'error';
+            $('status').textContent = err.message || 'Could not reach server.';
+        }
+    });
+    $('filter').addEventListener('input',render);
+    $('sort').addEventListener('input', render);
+    function render() {
+        const f = $('filter').value.toLowerCase();
+        const key = $('sort').value;
+        const list = data
+            .filter((d) => (d.brand + d.generic + d.manufacturer).toLowerCase().includes(f))
+            .sort((a,b) => a[key].localeCompare(b[key]));
+        $('status').textContent = list.length + ' of ' + data.length + ' shown ';
+        $('results').innerHTML = '';
+        list.forEach((d) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const h = document.createElement('h3');
+            h.textContent = d.brand + (d.boxed ? ' (BOXED WARNING)' : '');
+            const m = docuument.createElement('p')
+            m.textContent = 'Warnings: ' + (d.warning || 'none listed');
+            const i = document.createElement('p');
+            i.textContent = 'Interactions: ' + (d.interactions || 'none listed');
+            card.append(h, m, w, i);
+        });
+    }
+</script>
+</body>
+</html>
