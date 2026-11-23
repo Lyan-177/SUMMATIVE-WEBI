@@ -15,7 +15,7 @@ app.get('/api/search', async (req,res) => {
         return res.status(400).json({ error: `Enter a drug name (2-60 letters or numbers).`});
     }
     const url = new URL('https://api.fda.gov/drug/label.json');
-    url.searchParams.set('search', 'openfda.brand_name:"${q}" openfda.generic_name."${q}"');
+    url.searchParams.set('search', `openfda.brand_name:"${q}" openfda.generic_name:"${q}"`);
     url.searchParams.set('limit','25');
     url.searchParams.set('api_key', process.env.OPENFDA_API_KEY);
     try {
